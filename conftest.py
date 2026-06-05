@@ -8,7 +8,6 @@ import pytest
 
 from api.client import TrelloApiClient
 from fixtures.generators import (
-    EntityContext,
     prepare_board,
     prepare_card,
     prepare_checklist,
@@ -34,11 +33,6 @@ def base_url(app_config: Config) -> str:
 @pytest.fixture(scope="session")
 def api_client(app_config: Config) -> TrelloApiClient:
     return TrelloApiClient(app_config)
-
-
-@pytest.fixture
-def entity_context() -> EntityContext:
-    return EntityContext()
 
 
 @pytest.fixture

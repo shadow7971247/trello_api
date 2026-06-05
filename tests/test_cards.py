@@ -54,6 +54,20 @@ class TestCards:
             assert fetched.id == card.id
             assert_card_name(fetched, card.name)
 
+    @allure.title("Переименование карточки")
+    @pytest.mark.cards
+    def test_rename_card(self, card: CardResponse, api_client: TrelloApiClient) -> None:
+        new_name = card_name("Renamed")
+
+        with allure.step("PUT обновление названия"):
+            updated = api_client.update_card(
+                card.id,
+                UpdateCardRequest(name=new_name),
+            )
+
+        with allure.step("Проверка нового имени"):
+            assert_card_name(updated, new_name)
+
     @allure.title("Обновление описания карточки")
     @pytest.mark.cards
     def test_update_card_description(

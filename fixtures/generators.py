@@ -65,9 +65,29 @@ def checkitem_name() -> str:
     return faker.sentence(nb_words=4).rstrip(".")
 
 
-def prepare_board(client: TrelloApiClient, name: str | None = None) -> BoardResponse:
-    payload = CreateBoardRequest(name=name or board_name())
+def prepare_board(
+    client: TrelloApiClient,
+    name: str | None = None,
+    *,
+    permission_level: str = "private",
+    desc: str | None = None,
+) -> BoardResponse:
+    payload = CreateBoardRequest(
+        name=name or board_name(),
+        desc=desc,
+        prefs_permission_level=permission_level,
+    )
     return client.create_board(payload)
+
+
+def prepare_public_board(
+    client: TrelloApiClient,
+    name: str | None = None,
+    *,
+    desc: str | None = None,
+) -> BoardResponse:
+    """Публичная доска — доступна в UI без логина по прямому URL."""
+    return prepare_board(client, name=name, permission_level="public", desc=desc)
 
 
 def prepare_list(

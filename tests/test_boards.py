@@ -72,6 +72,43 @@ class TestBoards:
             )
             assert get_response.status_code in (404, 410)
 
+    @allure.title("Создание публичной доски")
+    @pytest.mark.boards
+    @pytest.mark.smoke
+    def test_create_public_board(self, api_client: TrelloApiClient) -> None:
+        name = board_name("Public Board")
+        payload = CreateBoardRequest(
+            name=name,
+            prefs_permission_level="public",
+            desc="Public board for anonymous UI checks",
+        )
+
+        with allure.step("Создание публичной доски"):
+            board = api_client.create_board(payload)
+
+        try:
+            with allure.step("Проверка URL и shortUrl"):
+                assert board.url
+                assert board.short_url
+                assert board.url.startswith("https://")
+        finally:
+            api_client.delete_board(board.id)
+
+    @allure.title("Закрытие (архивация) доски через API")
+    @pytest.mark.boards
+    def test_close_board(self, api_client: TrelloApiClient) -> None:
+        board = prepare_board(api_client)
+
+        with allure.step("PUT closed=true"):
+            closed = api_client.close_board(board.id)
+
+        with allure.step("Проверка closed=true"):
+            assert closed.closed is True
+            fetched = api_client.get_board(board.id)
+            assert fetched.closed is True
+
+        api_client.delete_board(board.id)
+
     @allure.title("Ошибка при создании доски без имени")
     @pytest.mark.boards
     def test_create_board_without_name(self, api_client: TrelloApiClient) -> None:
