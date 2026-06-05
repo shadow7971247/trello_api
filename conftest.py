@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Generator
 
+import allure
 import pytest
 
 from api.client import TrelloApiClient
+from utils.attach import attach_text
 from fixtures.generators import (
     prepare_board,
     prepare_card,
@@ -77,3 +79,17 @@ def checklist(
 ) -> Generator[dict, None, None]:
     created = prepare_checklist(api_client, card.id)
     yield created
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item: pytest.Item) -> Generator[None, None, None]:
+    outcome = yield
+    report = outcome.get_result()
+    if report.when == "setup":
+        allure.dynamic.epic("Trello API")
+    if report.when != "call":
+        return
+    attach_text(
+        "Результат",
+        f"{item.name}: {report.outcome} ({report.duration:.2f} с)",
+    )
