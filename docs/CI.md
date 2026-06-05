@@ -19,7 +19,7 @@ pytest -m smoke --alluredir=allure-results
 |-------------|------|
 | trello_api | API-тесты, клиент для UI/Mobile |
 | trello_ui | Selenium; нужен клон **trello_api** рядом или `TRELLO_API_PATH` |
-| trello_mobile | Appium; LambdaTest — `pytest -m lambdatest_smoke --run-context lambdatest` |
+| trello_mobile | Appium; BrowserStack — `pytest -m cloud_smoke --run-context browserstack` |
 
 ## Allure TestOps
 
