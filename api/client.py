@@ -98,18 +98,31 @@ class TrelloApiClient:
         response = self._request("GET", Endpoints.BOARD_BY_ID.format(board_id=board_id))
         return validate_board(parse_json(response))
 
-    def update_board(self, board_id: str, *, name: str | None = None, desc: str | None = None) -> BoardResponse:
+    def update_board(
+        self,
+        board_id: str,
+        *,
+        name: str | None = None,
+        desc: str | None = None,
+        closed: bool | None = None,
+    ) -> BoardResponse:
         params: dict[str, str] = {}
         if name is not None:
             params["name"] = name
         if desc is not None:
             params["desc"] = desc
+        if closed is not None:
+            params["closed"] = str(closed).lower()
         response = self._request(
             "PUT",
             Endpoints.BOARD_BY_ID.format(board_id=board_id),
             params=params,
         )
         return validate_board(parse_json(response))
+
+    def close_board(self, board_id: str) -> BoardResponse:
+        """Закрыть (архивировать) доску."""
+        return self.update_board(board_id, closed=True)
 
     def delete_board(self, board_id: str) -> requests.Response:
         return self._request("DELETE", Endpoints.BOARD_BY_ID.format(board_id=board_id))
