@@ -19,7 +19,7 @@ class TestAuth:
     @pytest.mark.auth
     @pytest.mark.smoke
     def test_get_current_user(self, api_client: TrelloApiClient) -> None:
-        with allure.step("Получение текущего пользователя (GET /members/me)"):
+        with allure.step("Запрос GET /members/me"):
             member = api_client.get_current_user()
 
         with allure.step("Проверка обязательных полей пользователя"):

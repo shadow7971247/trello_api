@@ -97,7 +97,7 @@ class TestCards:
         with allure.step("Перемещение карточки в другой список"):
             moved = api_client.move_card(card.id, second_list.id)
 
-        with allure.step("Проверка списка после перемещения"):
+        with allure.step("Проверка idList после перемещения"):
             assert_card_in_list(moved, second_list.id)
 
     @allure.title("Архивирование карточки")

@@ -87,7 +87,7 @@ class TestBoards:
             board = api_client.create_board(payload)
 
         try:
-            with allure.step("Проверка URL и короткой ссылки"):
+            with allure.step("Проверка URL и shortUrl"):
                 assert board.url
                 assert board.short_url
                 assert board.url.startswith("https://")
