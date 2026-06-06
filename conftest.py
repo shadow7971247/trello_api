@@ -86,7 +86,7 @@ def pytest_runtest_makereport(item: pytest.Item) -> Generator[None, None, None]:
     outcome = yield
     report = outcome.get_result()
     if report.when == "setup":
-        allure.dynamic.epic("Trello API")
+        allure.dynamic.epic("REST API Trello")
     if report.when != "call":
         return
     attach_text(

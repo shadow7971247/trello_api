@@ -37,7 +37,7 @@ class TestBoards:
     @allure.title("Получение доски по ID")
     @pytest.mark.boards
     def test_get_board(self, board: BoardResponse, api_client: TrelloApiClient) -> None:
-        with allure.step("GET доски по ID"):
+        with allure.step("Получение доски по ID"):
             fetched = api_client.get_board(board.id)
 
         with allure.step("Проверка соответствия данных"):
@@ -49,7 +49,7 @@ class TestBoards:
     def test_update_board(self, board: BoardResponse, api_client: TrelloApiClient) -> None:
         new_name = board_name("Updated Board")
 
-        with allure.step("PUT обновление доски"):
+        with allure.step("Обновление названия доски"):
             updated = api_client.update_board(board.id, name=new_name)
 
         with allure.step("Проверка обновлённого имени"):
@@ -60,7 +60,7 @@ class TestBoards:
     def test_delete_board(self, api_client: TrelloApiClient) -> None:
         board = prepare_board(api_client)
 
-        with allure.step("DELETE доски"):
+        with allure.step("Удаление доски"):
             response = api_client.delete_board(board.id)
             assert_status_code(response, 200)
 
@@ -87,7 +87,7 @@ class TestBoards:
             board = api_client.create_board(payload)
 
         try:
-            with allure.step("Проверка URL и shortUrl"):
+            with allure.step("Проверка URL и короткой ссылки"):
                 assert board.url
                 assert board.short_url
                 assert board.url.startswith("https://")
@@ -99,10 +99,10 @@ class TestBoards:
     def test_close_board(self, api_client: TrelloApiClient) -> None:
         board = prepare_board(api_client)
 
-        with allure.step("PUT closed=true"):
+        with allure.step("Архивирование доски (closed=true)"):
             closed = api_client.close_board(board.id)
 
-        with allure.step("Проверка closed=true"):
+        with allure.step("Проверка флага архивации"):
             assert closed.closed is True
             fetched = api_client.get_board(board.id)
             assert fetched.closed is True
@@ -112,7 +112,7 @@ class TestBoards:
     @allure.title("Ошибка при создании доски без имени")
     @pytest.mark.boards
     def test_create_board_without_name(self, api_client: TrelloApiClient) -> None:
-        with allure.step("POST /boards без обязательного поля name"):
+        with allure.step("Создание доски без обязательного поля name"):
             response = api_client.raw_request(
                 "POST",
                 Endpoints.BOARDS,

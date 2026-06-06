@@ -47,7 +47,7 @@ class TestCards:
     @allure.title("Получение карточки по ID")
     @pytest.mark.cards
     def test_get_card(self, card: CardResponse, api_client: TrelloApiClient) -> None:
-        with allure.step("GET карточки по ID"):
+        with allure.step("Получение карточки по ID"):
             fetched = api_client.get_card(card.id)
 
         with allure.step("Проверка данных карточки"):
@@ -59,7 +59,7 @@ class TestCards:
     def test_rename_card(self, card: CardResponse, api_client: TrelloApiClient) -> None:
         new_name = card_name("Renamed")
 
-        with allure.step("PUT обновление названия"):
+        with allure.step("Обновление названия карточки"):
             updated = api_client.update_card(
                 card.id,
                 UpdateCardRequest(name=new_name),
@@ -77,7 +77,7 @@ class TestCards:
     ) -> None:
         new_desc = card_description()
 
-        with allure.step("PUT обновление описания"):
+        with allure.step("Обновление описания карточки"):
             updated = api_client.update_card(
                 card.id,
                 UpdateCardRequest(desc=new_desc),
@@ -97,7 +97,7 @@ class TestCards:
         with allure.step("Перемещение карточки в другой список"):
             moved = api_client.move_card(card.id, second_list.id)
 
-        with allure.step("Проверка idList после перемещения"):
+        with allure.step("Проверка списка после перемещения"):
             assert_card_in_list(moved, second_list.id)
 
     @allure.title("Архивирование карточки")
@@ -106,7 +106,7 @@ class TestCards:
         with allure.step("Архивирование карточки (closed=true)"):
             archived = api_client.archive_card(card.id)
 
-        with allure.step("Проверка статуса closed"):
+        with allure.step("Проверка флага архивации"):
             assert_card_closed(archived, closed=True)
 
     @allure.title("Удаление карточки")
@@ -118,7 +118,7 @@ class TestCards:
     ) -> None:
         created = prepare_card(api_client, trello_list.id)
 
-        with allure.step("DELETE карточки"):
+        with allure.step("Удаление карточки"):
             response = api_client.delete_card(created.id)
             assert_status_code(response, 200)
 

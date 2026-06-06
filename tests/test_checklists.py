@@ -21,7 +21,7 @@ class TestChecklists:
         card: CardResponse,
         api_client: TrelloApiClient,
     ) -> None:
-        with allure.step("POST создание чек-листа"):
+        with allure.step("Создание чек-листа"):
             checklist = prepare_checklist(api_client, card.id)
 
         with allure.step("Проверка полей чек-листа"):
@@ -38,7 +38,7 @@ class TestChecklists:
     ) -> None:
         item_name = checkitem_name()
 
-        with allure.step("POST добавление checkItem"):
+        with allure.step("Добавление пункта в чек-лист"):
             checkitem = api_client.add_checkitem(checklist["id"], item_name)
 
         with allure.step("Проверка созданного пункта"):
