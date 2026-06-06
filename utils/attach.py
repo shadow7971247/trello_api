@@ -21,12 +21,12 @@ def attach_text(name: str, text: str) -> None:
 
 
 def attach_request(method: str, url: str, payload: Any = None) -> None:
-    attach_text("Метод HTTP", method.upper())
-    attach_text("URL запроса", url)
+    attach_text("HTTP Method", method.upper())
+    attach_text("Endpoint", url)
     if payload is not None:
-        attach_json("Тело запроса", payload)
+        attach_json("Request Payload", payload)
 
 
 def attach_response(status_code: int, body: Any) -> None:
-    attach_text("Код ответа", str(status_code))
-    attach_json("Тело ответа", body)
+    attach_text("Status Code", str(status_code))
+    attach_json("Response Body", body)
