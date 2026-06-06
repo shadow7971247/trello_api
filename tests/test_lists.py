@@ -41,7 +41,7 @@ class TestLists:
         trello_list: ListResponse,
         api_client: TrelloApiClient,
     ) -> None:
-        with allure.step("GET списка по ID"):
+        with allure.step("Получение списка по ID"):
             fetched = api_client.get_list(trello_list.id)
 
         with allure.step("Проверка данных списка"):
@@ -57,7 +57,7 @@ class TestLists:
     ) -> None:
         new_name = list_name("Renamed List")
 
-        with allure.step("PUT переименование списка"):
+        with allure.step("Переименование списка"):
             updated = api_client.update_list(trello_list.id, name=new_name)
 
         with allure.step("Проверка нового имени"):

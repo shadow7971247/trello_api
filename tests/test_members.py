@@ -15,7 +15,7 @@ class TestMembers:
     @pytest.mark.members
     @pytest.mark.smoke
     def test_get_member_boards(self, api_client: TrelloApiClient) -> None:
-        with allure.step("GET /members/me/boards"):
+        with allure.step("Получение досок текущего участника (GET /members/me/boards)"):
             boards = api_client.get_member_boards()
 
         with allure.step("Проверка структуры ответа"):
@@ -27,7 +27,7 @@ class TestMembers:
     @allure.title("Получение рабочих пространств текущего участника")
     @pytest.mark.members
     def test_get_member_workspaces(self, api_client: TrelloApiClient) -> None:
-        with allure.step("GET /members/me/organizations"):
+        with allure.step("Получение рабочих пространств (GET /members/me/organizations)"):
             workspaces = api_client.get_workspaces()
 
         with allure.step("Проверка структуры ответа"):

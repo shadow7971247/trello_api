@@ -65,7 +65,7 @@ class TrelloApiClient:
         log_request(self._logger, method, url, query_params if not json_body else json_body)
         attach_request(method, url, query_params if not json_body else json_body)
 
-        with allure.step(f"{method.upper()} {path}"):
+        with allure.step(f"Запрос {method.upper()} {path}"):
             response = self._session.request(
                 method=method,
                 url=url,
