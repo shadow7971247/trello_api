@@ -8,27 +8,26 @@ import allure
 import pytest
 
 from api.client import TrelloApiClient
-from utils.attach import attach_text
-from fixtures.generators import (
-    prepare_board,
-    prepare_card,
-    prepare_checklist,
-    prepare_list,
-)
+from fixtures.factories import prepare_board, prepare_card, prepare_checklist, prepare_list, prepare_public_board
+from fixtures.generators import board_name
+from fixtures.test_data import BOARD_NAME_PREFIX
+from models.request.create_board import CreateBoardRequest
 from models.response.board_response import BoardResponse
 from models.response.card_response import CardResponse
 from models.response.list_response import ListResponse
-from utils.config import Config, config
+from utils.attach import attach_text
+from utils.config import Config
+
 
 @pytest.fixture(scope="session")
 def app_config() -> Config:
+    config = Config.from_env()
     config.validate()
     return config
 
 
 @pytest.fixture(scope="session")
 def base_url(app_config: Config) -> str:
-    """Базовый URI Trello API."""
     return app_config.base_url
 
 
@@ -45,6 +44,28 @@ def board(api_client: TrelloApiClient) -> Generator[BoardResponse, None, None]:
 
 
 @pytest.fixture
+def public_board(api_client: TrelloApiClient) -> Generator[BoardResponse, None, None]:
+    created = prepare_public_board(api_client)
+    yield created
+    api_client.delete_board(created.id)
+
+
+@pytest.fixture
+def created_board(api_client: TrelloApiClient) -> Generator[tuple[str, BoardResponse], None, None]:
+    name = board_name(BOARD_NAME_PREFIX)
+    board = api_client.create_board(CreateBoardRequest(name=name))
+    yield name, board
+    api_client.delete_board(board.id)
+
+
+@pytest.fixture
+def created_public_board(api_client: TrelloApiClient) -> Generator[BoardResponse, None, None]:
+    board = prepare_public_board(api_client)
+    yield board
+    api_client.delete_board(board.id)
+
+
+@pytest.fixture
 def trello_list(
     api_client: TrelloApiClient,
     board: BoardResponse,
@@ -55,6 +76,16 @@ def trello_list(
 
 @pytest.fixture
 def card(
+    api_client: TrelloApiClient,
+    trello_list: ListResponse,
+) -> Generator[CardResponse, None, None]:
+    created = prepare_card(api_client, trello_list.id)
+    yield created
+    api_client.delete_card(created.id)
+
+
+@pytest.fixture
+def created_card(
     api_client: TrelloApiClient,
     trello_list: ListResponse,
 ) -> Generator[CardResponse, None, None]:

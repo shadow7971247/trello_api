@@ -5,9 +5,10 @@ from __future__ import annotations
 import allure
 import pytest
 
-from api.assertions import assert_list_name
+from api.assertions import assert_equals
 from api.client import TrelloApiClient
-from fixtures.generators import list_name, prepare_list
+from fixtures.factories import prepare_list
+from fixtures.generators import list_name
 from fixtures.test_data import LIST_NAME_PREFIX
 from models.response.board_response import BoardResponse
 from models.response.list_response import ListResponse
@@ -31,8 +32,8 @@ class TestLists:
 
         with allure.step("Проверка полей списка"):
             assert created.id
-            assert_list_name(created, name)
-            assert created.id_board == board.id
+            assert_equals(created.name, name, "list.name")
+            assert_equals(created.id_board, board.id, "list.id_board")
 
     @allure.title("Получение списка по ID")
     @pytest.mark.lists
@@ -45,8 +46,8 @@ class TestLists:
             fetched = api_client.get_list(trello_list.id)
 
         with allure.step("Проверка данных списка"):
-            assert fetched.id == trello_list.id
-            assert_list_name(fetched, trello_list.name)
+            assert_equals(fetched.id, trello_list.id, "list.id")
+            assert_equals(fetched.name, trello_list.name, "list.name")
 
     @allure.title("Переименование списка")
     @pytest.mark.lists
@@ -61,4 +62,4 @@ class TestLists:
             updated = api_client.update_list(trello_list.id, name=new_name)
 
         with allure.step("Проверка нового имени"):
-            assert_list_name(updated, new_name)
+            assert_equals(updated.name, new_name, "list.name")

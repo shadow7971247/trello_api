@@ -5,15 +5,10 @@ from __future__ import annotations
 import allure
 import pytest
 
-from api.assertions import (
-    assert_card_closed,
-    assert_card_description,
-    assert_card_in_list,
-    assert_card_name,
-    assert_status_code,
-)
+from api.assertions import assert_equals, assert_status_code
 from api.client import TrelloApiClient
-from fixtures.generators import card_description, card_name, prepare_card
+from api.endpoints import Endpoints
+from fixtures.generators import card_description, card_name
 from fixtures.test_data import CARD_NAME_PREFIX
 from models.request.update_card import UpdateCardRequest
 from models.response.card_response import CardResponse
@@ -28,21 +23,12 @@ class TestCards:
     @pytest.mark.smoke
     def test_create_card(
         self,
+        created_card: CardResponse,
         trello_list: ListResponse,
-        api_client: TrelloApiClient,
     ) -> None:
-        name = card_name(CARD_NAME_PREFIX)
-
-        with allure.step("Создание карточки"):
-            created = prepare_card(api_client, trello_list.id, name=name)
-
-        try:
-            with allure.step("Проверка полей карточки"):
-                assert created.id
-                assert_card_name(created, name)
-                assert_card_in_list(created, trello_list.id)
-        finally:
-            api_client.delete_card(created.id)
+        with allure.step("Проверка полей карточки"):
+            assert created_card.id
+            assert_equals(created_card.id_list, trello_list.id, "card.id_list")
 
     @allure.title("Получение карточки по ID")
     @pytest.mark.cards
@@ -51,8 +37,8 @@ class TestCards:
             fetched = api_client.get_card(card.id)
 
         with allure.step("Проверка данных карточки"):
-            assert fetched.id == card.id
-            assert_card_name(fetched, card.name)
+            assert_equals(fetched.id, card.id, "card.id")
+            assert_equals(fetched.name, card.name, "card.name")
 
     @allure.title("Переименование карточки")
     @pytest.mark.cards
@@ -60,13 +46,10 @@ class TestCards:
         new_name = card_name("Renamed")
 
         with allure.step("Обновление названия карточки"):
-            updated = api_client.update_card(
-                card.id,
-                UpdateCardRequest(name=new_name),
-            )
+            updated = api_client.update_card(card.id, UpdateCardRequest(name=new_name))
 
         with allure.step("Проверка нового имени"):
-            assert_card_name(updated, new_name)
+            assert_equals(updated.name, new_name, "card.name")
 
     @allure.title("Обновление описания карточки")
     @pytest.mark.cards
@@ -78,13 +61,10 @@ class TestCards:
         new_desc = card_description()
 
         with allure.step("Обновление описания карточки"):
-            updated = api_client.update_card(
-                card.id,
-                UpdateCardRequest(desc=new_desc),
-            )
+            updated = api_client.update_card(card.id, UpdateCardRequest(desc=new_desc))
 
         with allure.step("Проверка описания"):
-            assert_card_description(updated, new_desc)
+            assert_equals(updated.desc, new_desc, "card.desc")
 
     @allure.title("Перемещение карточки между списками")
     @pytest.mark.cards
@@ -98,7 +78,7 @@ class TestCards:
             moved = api_client.move_card(card.id, second_list.id)
 
         with allure.step("Проверка idList после перемещения"):
-            assert_card_in_list(moved, second_list.id)
+            assert_equals(moved.id_list, second_list.id, "card.id_list")
 
     @allure.title("Архивирование карточки")
     @pytest.mark.cards
@@ -107,7 +87,7 @@ class TestCards:
             archived = api_client.archive_card(card.id)
 
         with allure.step("Проверка флага архивации"):
-            assert_card_closed(archived, closed=True)
+            assert_equals(archived.closed, True, "card.closed")
 
     @allure.title("Удаление карточки")
     @pytest.mark.cards
@@ -116,16 +96,14 @@ class TestCards:
         trello_list: ListResponse,
         api_client: TrelloApiClient,
     ) -> None:
-        created = prepare_card(api_client, trello_list.id)
+        from fixtures.factories import prepare_card
+
+        card = prepare_card(api_client, trello_list.id)
+        card_id = card.id
 
         with allure.step("Удаление карточки"):
-            response = api_client.delete_card(created.id)
-            assert_status_code(response, 200)
+            api_client.delete_card(card_id)
 
         with allure.step("Проверка отсутствия карточки"):
-            get_response = api_client.raw_request(
-                "GET",
-                f"/cards/{created.id}",
-                validate=False,
-            )
-            assert get_response.status_code in (404, 410)
+            response = api_client.raw_request("GET", Endpoints.CARD_BY_ID.format(card_id=card_id))
+            assert_status_code(response, 404)

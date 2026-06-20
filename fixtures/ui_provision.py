@@ -4,14 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from api.assertions import (
-    assert_board_name,
-    assert_card_description,
-    assert_card_in_list,
-    assert_card_name,
-    assert_list_name,
-)
+from api.assertions import assert_equals, assert_status_code
 from api.client import TrelloApiClient
+from api.endpoints import Endpoints
+from fixtures.factories import prepare_board, prepare_card, prepare_checklist, prepare_list
 from fixtures.generators import (
     EntityContext,
     board_name,
@@ -20,10 +16,6 @@ from fixtures.generators import (
     checkitem_name,
     checklist_name,
     list_name,
-    prepare_board,
-    prepare_card,
-    prepare_checklist,
-    prepare_list,
 )
 from fixtures.test_data import BOARD_NAME_PREFIX, CARD_NAME_PREFIX, LIST_NAME_PREFIX
 from utils.test_context import (
@@ -78,24 +70,27 @@ def verify_stack(client: TrelloApiClient, ctx: EntityContext) -> None:
     assert ctx.card is not None
 
     fetched_board = client.get_board(ctx.board.id)
-    assert_board_name(fetched_board, ctx.board.name)
+    assert_equals(fetched_board.name, ctx.board.name, "board.name")
 
     fetched_list = client.get_list(ctx.trello_list.id)
-    assert_list_name(fetched_list, ctx.trello_list.name)
+    assert_equals(fetched_list.name, ctx.trello_list.name, "list.name")
 
     fetched_card = client.get_card(ctx.card.id)
-    assert_card_name(fetched_card, ctx.card.name)
+    assert_equals(fetched_card.name, ctx.card.name, "card.name")
     if ctx.card.desc:
-        assert_card_description(fetched_card, ctx.card.desc)
-    assert_card_in_list(fetched_card, ctx.trello_list.id)
+        assert_equals(fetched_card.desc, ctx.card.desc, "card.desc")
+    assert_equals(fetched_card.id_list, ctx.trello_list.id, "card.id_list")
 
 
 def _cleanup_board_if_present(client: TrelloApiClient, board_id: str | None) -> None:
     if not board_id:
         return
-    response = client.delete_board(board_id)
-    if response.status_code not in (200, 404, 410):
-        response.raise_for_status()
+    response = client.raw_request("GET", Endpoints.BOARD_BY_ID.format(board_id=board_id))
+    if response.status_code == 404:
+        return
+    assert_status_code(response, 200)
+    delete_response = client.delete_board(board_id)
+    assert_status_code(delete_response, 200)
 
 
 def provision_ui_test_data(client: TrelloApiClient) -> dict[str, Any]:

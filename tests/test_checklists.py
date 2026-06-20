@@ -6,7 +6,8 @@ import allure
 import pytest
 
 from api.client import TrelloApiClient
-from fixtures.generators import checkitem_name, prepare_checklist
+from fixtures.factories import prepare_checklist
+from fixtures.generators import checkitem_name
 from models.response.card_response import CardResponse
 
 

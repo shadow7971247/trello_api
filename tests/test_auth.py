@@ -37,7 +37,7 @@ class TestAuth:
         client = TrelloApiClient(invalid_config)
 
         with allure.step("Запрос с невалидным токеном"):
-            response = client.raw_request("GET", Endpoints.MEMBERS_ME, validate=False)
+            response = client.raw_request("GET", Endpoints.MEMBERS_ME)
 
         with allure.step("Проверка статуса 401"):
             assert_status_code(response, 401)
