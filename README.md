@@ -1,237 +1,134 @@
-# trello-api-tests
+# trello_api
 
-Производственный API-автотестовый фреймворк для **Trello REST API**.  
-Первый проект дипломной экосистемы QA: **API-first** — сущности создаются через API и переиспользуются в `trello_ui` и `trello_mobile`.
+REST API-автотесты для **Trello**. Роль в дипломной экосистеме — **data provider**: создаёт сущности через API, переиспользуется в [trello_ui](https://github.com/shadow7971247/trello_ui) и [trello_mobile](https://github.com/shadow7971247/trello_mobile).
 
-Связанные репозитории: **trello_ui**, **trello_mobile** (API-first). CI и Allure TestOps — см. `docs/CI.md`.
-
-## Обзор проекта
-
-| Аспект | Описание |
-|--------|----------|
-| Домен | Trello API v1 |
-| Роль в экосистеме | Data Provider для UI/Mobile тестов |
-| Подход | API создаёт ресурсы → UI/Mobile проверяют отображение |
-| Уровень | Enterprise-архитектура автоматизации |
+**Overview:** [trello](https://github.com/shadow7971247/trello) · **Архитектура:** [docs/ARCHITECTURE.md](https://github.com/shadow7971247/trello/blob/main/docs/ARCHITECTURE.md) · **CI:** [docs/CI.md](https://github.com/shadow7971247/trello/blob/main/docs/CI.md)
 
 ## Стек
 
-- Python 3.14+
-- [Pytest](https://docs.pytest.org/) — раннер и фикстуры
-- [Requests](https://requests.readthedocs.io/) — HTTP-клиент
-- [Pydantic v2](https://docs.pydantic.dev/) — типизированные request/response модели
-- [Allure](https://docs.qameta.io/allure/) — отчётность
-- [python-dotenv](https://github.com/theskumar/python-dotenv) — конфигурация
-- [Faker](https://faker.readthedocs.io/) — генерация данных
-- Logging — структурированные логи запросов/ответов
-- GitHub Actions — CI
+- Python 3.12+
+- Pytest, Requests, Pydantic v2, Allure, Faker, python-dotenv
 
-## Архитектура
+## Архитектура решения
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      tests/ (Pytest)                        │
-│   test_auth · test_boards · test_lists · test_cards · ...   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ фикстуры / assertions
-┌──────────────────────────▼──────────────────────────────────┐
-│                    fixtures/ + conftest.py                    │
-│   prepare_board · prepare_list · prepare_card · EntityContext │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                      api/client.py                          │
-│         Единая точка HTTP (Allure steps + logging)          │
-└───────┬──────────────────────────────────────┬──────────────┘
-        │                                      │
-┌───────▼────────┐                    ┌──────▼───────┐
-│ models/request │                    │models/response│
-│   Pydantic v2  │                    │  Pydantic v2  │
-└────────────────┘                    └──────────────┘
-        │                                      │
-┌───────▼──────────────────────────────────────▼──────────────┐
-│              utils/ (config · logger · attach)               │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                    Trello REST API
+```mermaid
+flowchart TB
+  T[tests Arrange Act Assert] --> F[fixtures factories]
+  T --> C[TrelloApiClient]
+  C --> CL[clients boards lists cards ...]
+  CL --> H[http.py]
+  CL --> V[validators]
+  H --> API[(Trello REST API)]
 ```
 
-### Слои
+| Слой | Папка | Ответственность |
+|------|-------|-----------------|
+| Test | `tests/` | Сценарии, маркеры, проверки |
+| Arrange | `fixtures/`, `conftest.py` | `prepare_*`, yield-фикстуры |
+| Low Level | `api/client.py`, `clients/*` | HTTP-методы, `assert_status_code` |
+| Контракты | `models/`, `api/validators.py` | Pydantic request/response |
+| Engine | `api/http.py` | `requests` без auto-raise на 4xx |
+| Config | `utils/config.py` | Только через фикстуру `app_config` |
 
-| Слой | Назначение |
-|------|------------|
-| `tests/` | Тонкие сценарии, только бизнес-шаги и проверки |
-| `api/client.py` | Все HTTP-вызовы, без `requests` в тестах |
-| `api/endpoints.py` | Константы путей — без magic strings |
-| `api/assertions.py` | Переиспользуемые проверки |
-| `api/helpers.py` | Парсинг и валидация ответов |
-| `models/` | Контракты запросов и ответов |
-| `fixtures/generators.py` | Фабрики сущностей + `EntityContext` для UI/Mobile |
-| `utils/` | Конфиг, логи, Allure-вложения |
+Подробнее: [ARCHITECTURE.md](https://github.com/shadow7971247/trello/blob/main/docs/ARCHITECTURE.md).
 
-### Интеграция API → UI → Mobile
-
-`EntityContext.as_dict()` возвращает идентификаторы созданных сущностей (`board_id`, `list_id`, `card_id`, …) — их можно экспортировать в JSON/переменные окружения для последующих репозиториев.
-
-## Структура репозитория
+## Структура
 
 ```
-trello-api-tests/
-├── .github/workflows/api-tests.yml
+trello_api/
 ├── api/
-│   ├── client.py
+│   ├── client.py          # фасад
+│   ├── http.py
 │   ├── endpoints.py
-│   ├── assertions.py
-│   └── helpers.py
-├── models/
-│   ├── request/
-│   │   ├── create_board.py
-│   │   ├── create_list.py
-│   │   ├── create_card.py
-│   │   └── update_card.py
-│   └── response/
-│       ├── board_response.py
-│       ├── list_response.py
-│       ├── card_response.py
-│       └── member_response.py
+│   ├── assertions.py      # assert_equals, assert_status_code
+│   ├── helpers.py         # parse_json, normalize_query_params
+│   └── validators.py
+├── clients/
+│   ├── boards.py
+│   ├── lists.py
+│   ├── cards.py
+│   ├── checklists.py
+│   └── members.py
 ├── fixtures/
-│   ├── generators.py
+│   ├── factories.py       # prepare_board, prepare_list, ...
+│   ├── generators.py      # board_name, card_name, ...
 │   └── test_data.py
-├── utils/
-│   ├── config.py
-│   ├── logger.py
-│   └── attach.py
+├── models/request|response/
 ├── tests/
-│   ├── test_auth.py
-│   ├── test_boards.py
-│   ├── test_lists.py
-│   ├── test_cards.py
-│   ├── test_checklists.py
-│   └── test_members.py
-├── .env.example
+├── utils/
 ├── conftest.py
-├── pytest.ini
-├── requirements.txt
-└── README.md
+└── pytest.ini
 ```
 
 ## Установка
 
 ```bash
-git clone <url-репозитория>
+git clone https://github.com/shadow7971247/trello_api.git
 cd trello_api
 python -m venv .venv
-
-# Windows
-.venv\Scripts\activate
-
-# Linux / macOS
-source .venv/bin/activate
-
+.venv\Scripts\activate          # Windows
 pip install -r requirements.txt
+copy .env.example .env
 ```
 
-## Конфигурация
+Заполните `.env`: `TRELLO_API_KEY`, `TRELLO_API_TOKEN` ([Trello Developer Keys](https://trello.com/app-key)).
 
-1. Скопируйте `.env.example` в `.env`:
-   ```bash
-   copy .env.example .env   # Windows
-   cp .env.example .env     # Linux/macOS
-   ```
-
-2. Получите ключ и токен:
-   - [Trello Developer API Keys](https://trello.com/app-key)
-   - Сгенерируйте Token (ссылка на странице ключа)
-
-3. Заполните `.env`:
-
-```env
-TRELLO_BASE_URL=https://api.trello.com/1
-TRELLO_API_KEY=ваш_api_key
-TRELLO_API_TOKEN=ваш_api_token
-```
-
-## Запуск тестов
+## Запуск
 
 ```bash
-# все тесты
-pytest
-
-# подробный вывод
-pytest -v
-
-# по маркерам
-pytest -m smoke
+pytest                          # все тесты (25)
+pytest -m smoke                 # smoke для Jenkins (7)
 pytest -m boards
-
-# один файл
-pytest tests/test_cards.py
+pytest tests/test_cards.py -v
+pytest --alluredir=allure-results && allure serve allure-results
 ```
 
-### Данные для UI (Selenium)
+### Smoke в CI (7 тестов)
 
-Создать доску, список, карточку, чек-лист → проверить через API → сохранить `artifacts/test-context.json` (сущности **не удаляются**):
+| Тест | Что проверяет |
+|------|---------------|
+| `test_get_current_user` | GET /members/me |
+| `test_create_board` | CRUD: создание доски |
+| `test_create_public_board` | Публичная доска для UI |
+| `test_create_list` | Список на доске |
+| `test_create_card` | Карточка в списке |
+| `test_create_checklist` | Чек-лист на карточке |
+| `test_get_member_boards` | Доски участника |
+
+### Данные для UI
 
 ```bash
-pytest -m ui_setup
-# или
-python scripts/provision_ui_data.py
+pytest -m ui_setup              # artifacts/test-context.json
+pytest -m ui_teardown           # очистка по контексту
 ```
 
-Удалить созданные ресурсы и файл контекста:
+## Покрытие
 
-```bash
-pytest -m ui_teardown
-# или
-python scripts/cleanup_ui_data.py
-```
-
-В JSON — `board_url`, `card_name`, `list_name` и id для репозитория `trello_ui`.
-Повторный `ui_setup` сначала удалит доску из предыдущего контекста (если файл ещё есть).
-```
-
-## Allure-отчёт
-
-```bash
-# установите Allure CLI: https://docs.qameta.io/allure/#_installing_a_commandline
-pytest --alluredir=allure-results
-allure serve allure-results
-```
-
-В отчёте: feature/story/title, шаги, payload запроса, тело ответа, status code.
-
-## CI (GitHub Actions)
-
-Workflow: `.github/workflows/api-tests.yml`
-
-**Secrets в репозитории:**
-
-| Secret | Описание |
+| Модуль | Сценарии |
 |--------|----------|
-| `TRELLO_BASE_URL` | Базовый URL API |
-| `TRELLO_API_KEY` | API Key |
-| `TRELLO_API_TOKEN` | API Token |
-
-Артефакт `allure-results` загружается после каждого прогона.
-
-## Покрытие тестов
-
-| Модуль | Тесты |
-|--------|-------|
-| Auth | `test_get_current_user`, `test_invalid_token` |
-| Boards | create, get, update, delete, без имени |
+| Auth | valid token, invalid token (401) |
+| Boards | CRUD, public, close, без имени |
 | Lists | create, get, rename |
-| Cards | create, get, update desc, move, archive, delete |
-| Checklists | create checklist, add checkitem |
+| Cards | CRUD, move, archive |
+| Checklists | checklist + checkitem |
 | Members | boards, workspaces |
 
-## Принципы качества
+## Принципы
 
-- PEP 8, типизация, SOLID на уровне слоёв
-- DRY: фикстуры и generators вместо дублирования setup
-- Без magic strings: `Endpoints`, константы в `test_data.py`
-- Негативные сценарии через `raw_request(validate=False)`
+- Тонкие тесты: Arrange в фикстурах, Assert в тесте или через `assert_*`
+- Негативные кейсы: `raw_request` + явный `assert_status_code(response, 404)` (не `in (404, 410)`)
+- Без дублирования `config.py` в корне — только `utils/config.py`
+- DRY: `fixtures/factories.py` вместо `try/finally` в тестах
 
-## Лицензия
+## Troubleshooting
 
-Учебный проект дипломной программы QA.
+| Ошибка | Решение |
+|--------|---------|
+| `400 Workspaces are full` | Удалите старые тестовые доски в аккаунте Trello |
+| `401` на smoke | Проверьте `TRELLO_API_KEY` / `TRELLO_API_TOKEN` |
+
+## CI
+
+Основной прогон — Jenkins [shadow7971247_trello_v2](https://jenkins.autotests.cloud/view/python_students/job/shadow7971247_trello_v2/), stage API: `pytest -m smoke`.
+
+Лицензия: учебный проект QA Guru.
